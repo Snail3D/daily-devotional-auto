@@ -5,6 +5,29 @@
 echo "🌅 Starting Daily Devotional Workflow - $(date)"
 echo "========================================"
 
+# Load API keys
+export GEMINI_API_KEY=$(cat ~/.clawd-devotional/.gemini_key 2>/dev/null || cat ~/.gemini_key 2>/dev/null || echo "")
+
+# Also load other API keys from config if available
+export NEWS_API_KEY=$(cat ~/.newsapi_key 2>/dev/null || echo "")
+export ELEVENLABS_API_KEY=$(cat ~/.elevenlabs_key 2>/dev/null || echo "")
+
+# Verify key is loaded
+if [ -n "$GEMINI_API_KEY" ]; then
+  echo "✅ Gemini API key loaded for Nano Banana"
+  echo "   Key starts with: ${GEMINI_API_KEY:0:10}..."
+else
+  echo "⚠️  Warning: GEMINI_API_KEY not found in Clawdbot config"
+fi
+
+if [ -z "$NEWS_API_KEY" ]; then
+  echo "⚠️  Warning: NEWS_API_KEY not set"
+fi
+
+if [ -z "$ELEVENLABS_API_KEY" ]; then
+  echo "⚠️  Warning: ELEVENLABS_API_KEY not set (will use default voice)"
+fi
+
 # 1. Check YouTube comments for user suggestions AND doctrinal alerts
 echo ""
 echo "💬 Step 1: Checking YouTube comments..."
