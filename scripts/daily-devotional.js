@@ -57,21 +57,26 @@ async function runDailyDevotional() {
     console.log('✍️ Generating devotional...');
     const devotional = await generateDevotional(newsContext, userSuggestedTopics);
     
-    // Step 3: Create TTS audio
+    // Step 3: Generate thumbnail
+    console.log('🎨 Generating thumbnail...');
+    const thumbnailResult = await generateThumbnail(devotional, { resolution: '1K' });
+    const thumbnailPath = thumbnailResult ? thumbnailResult.baseImage : null;
+    
+    // Step 4: Create TTS audio
     console.log('🎙️ Creating audio...');
     const audioPath = await createTTS(devotional);
     
-    // Step 4: Render video with prominent title
+    // Step 5: Render video with thumbnail as background
     console.log('🎬 Rendering video...');
-    const videoPath = await renderVideoWithTitle(audioPath, devotional);
+    const videoPath = await renderVideoWithTitle(audioPath, devotional, thumbnailPath);
     
-    // Step 5: Upload to YouTube
+    // Step 6: Upload to YouTube (with thumbnail if generated)
     console.log('📤 Uploading to YouTube...');
-    const uploadResult = await uploadToYouTube(videoPath, devotional);
+    const uploadResult = await uploadToYouTube(videoPath, devotional, thumbnailPath);
     
-    // Step 6: Clean up
+    // Step 7: Clean up
     console.log('🧹 Cleaning up...');
-    cleanup(videoPath, audioPath);
+    cleanup(videoPath, audioPath, thumbnailPath);
     
     console.log('✅ Daily devotional complete!');
     console.log(`📺 YouTube URL: https://youtube.com/watch?v=${uploadResult.videoId}`);
@@ -369,28 +374,40 @@ async function createTTS(devotional) {
 }
 
 /**
- * Render video with prominent title at the top
- * Uses Python PIL to create title card, then ffmpeg for visualizer
+ * Render video with AI-generated thumbnail as background
+ * Uses thumbnail image with audio visualizer overlay
  */
-async function renderVideoWithTitle(audioPath, devotional) {
+async function renderVideoWithTitle(audioPath, devotional, thumbnailPath = null) {
   const date = new Date().toISOString().split('T')[0];
   const videoPath = path.join(CONFIG.outputDir, `devotional-${date}.mp4`);
-  const titleCardPath = path.join(CONFIG.tempDir, `titlecard-${date}.png`);
   
-  // Create title card using Python PIL
-  createTitleCardPIL(devotional, titleCardPath);
+  let backgroundInput;
+  let cleanupBackground = false;
   
-  // Create video with ffmpeg using the title card
-  const cmd = `ffmpeg -y -loop 1 -i "${titleCardPath}" -i "${audioPath}" -filter_complex "
-    [1:a]showwaves=s=1920x180:mode=cline:colors=0x3b82f6|0x8b5cf6[viz];
-    [0:v][viz]overlay=0:H-h-30:format=auto[final]
+  if (thumbnailPath && fs.existsSync(thumbnailPath)) {
+    // Use AI-generated thumbnail as background
+    console.log('🎨 Using AI-generated thumbnail as video background...');
+    backgroundInput = thumbnailPath;
+  } else {
+    // Fallback to title card
+    const titleCardPath = path.join(CONFIG.tempDir, `titlecard-${date}.png`);
+    createTitleCardPIL(devotional, titleCardPath);
+    backgroundInput = titleCardPath;
+    cleanupBackground = true;
+  }
+  
+  // Create video with ffmpeg using the background (thumbnail or title card)
+  const cmd = `ffmpeg -y -loop 1 -i "${backgroundInput}" -i "${audioPath}" -filter_complex "
+    [1:a]showwaves=s=1920x200:mode=cline:colors=0x3b82f6|0x8b5cf6:scale=lin[viz];
+    [0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[bg];
+    [bg][viz]overlay=0:H-h-40:format=auto[final]
   " -map "[final]" -map 1:a -c:v libx264 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest "${videoPath}"`;
   
   execSync(cmd, { stdio: 'inherit' });
   
-  // Cleanup title card
-  if (fs.existsSync(titleCardPath)) {
-    fs.unlinkSync(titleCardPath);
+  // Cleanup title card if we created one
+  if (cleanupBackground && fs.existsSync(backgroundInput)) {
+    fs.unlinkSync(backgroundInput);
   }
   
   return videoPath;
@@ -501,7 +518,7 @@ print(f"Title card created: ${outputPath}")
 /**
  * Upload to YouTube
  */
-async function uploadToYouTube(videoPath, devotional) {
+async function uploadToYouTube(videoPath, devotional, thumbnailPath = null) {
   const title = `Daily Devotional - ${devotional.title} | ${devotional.scripture}`;
   
   // Use the youtube-studio skill to upload
@@ -512,6 +529,9 @@ async function uploadToYouTube(videoPath, devotional) {
   if (!fs.existsSync(uploadScript)) {
     console.log(`Upload script not found at ${uploadScript}`);
     console.log(`Would upload: ${title}`);
+    if (thumbnailPath) {
+      console.log(`With thumbnail: ${thumbnailPath}`);
+    }
     return { videoId: 'PLACEHOLDER', status: 'uploaded' };
   }
   
@@ -519,11 +539,15 @@ async function uploadToYouTube(videoPath, devotional) {
   // that calls the youtube-studio skill separately
   console.log(`Ready to upload: ${title}`);
   console.log(`Video path: ${videoPath}`);
+  if (thumbnailPath) {
+    console.log(`Thumbnail path: ${thumbnailPath}`);
+  }
   
   return {
     videoId: 'READY_FOR_UPLOAD',
     status: 'ready',
     videoPath,
+    thumbnailPath,
     title,
     description: devotional.description,
   };
@@ -584,10 +608,16 @@ function markTopicAsUsed(topic) {
 /**
  * Clean up temporary files
  */
-function cleanup(videoPath, audioPath) {
+function cleanup(videoPath, audioPath, thumbnailPath = null) {
   if (fs.existsSync(videoPath)) {
     fs.unlinkSync(videoPath);
     console.log(`Deleted: ${videoPath}`);
+  }
+  
+  // Clean up thumbnail if it was saved to temp
+  if (thumbnailPath && fs.existsSync(thumbnailPath) && thumbnailPath.includes(CONFIG.tempDir)) {
+    fs.unlinkSync(thumbnailPath);
+    console.log(`Deleted thumbnail: ${thumbnailPath}`);
   }
   
   const tempFiles = fs.readdirSync(CONFIG.tempDir);
