@@ -318,6 +318,21 @@ function formatFullText(devotional) {
   return `${devotional.title}\n\n${devotional.scripture}\n"${devotional.scriptureText}"\n\n${devotional.intro}\n\n${devotional.body}\n\nReflection Question: ${devotional.reflection}\n\nPrayer: ${devotional.prayer}`;
 }
 
+function formatTextForSpeech(devotional) {
+  // Add natural pauses for better ElevenLabs TTS quality
+  return `${devotional.title}. <break time="1s"/>
+
+${devotional.scripture}. <break time="0.5s"/> ${devotional.scriptureText} <break time="1.5s"/>
+
+${devotional.intro} <break time="1s"/>
+
+${devotional.body} <break time="1.5s"/>
+
+Reflection Question. <break time="0.5s"/> ${devotional.reflection} <break time="2s"/>
+
+Prayer. <break time="0.5s"/> ${devotional.prayer}`;
+}
+
 function formatDescription(devotional) {
   return `${devotional.intro}\n\n${devotional.body}\n\n🤔 Reflection Question:\n${devotional.reflection}\n\n🙏 Prayer:\n${devotional.prayer}\n\n---\n🌅 Daily Devotional for ${devotional.date}\n📖 Scripture: ${devotional.scripture}\n\n🤖 This devotional was generated 100% automatically by AI based on current news and/or viewer suggestions.\n\n💬 Have a topic you'd like us to cover? Leave a comment below with your suggestion! We read every comment and may feature your topic in a future devotional.\n\n---\n📝 A Note from Snail:\n\n"I know this is a little bit weird and freaky, but I'm trying to prove a point with this: automations can be used for Kingdom work and to inspire people to make their own things for Jesus and His glory. I'm not trying to replace any pastor or subvert their authority. Please keep in mind that this was written, composed, and even posted entirely by AI. So please post in the comments if you see any errors."\n\n💬 Want to reach me directly? Check the channel description for my Discord link - that's the best way to get in touch!\n\n---\n🔧 Interested in how this works?\n\nThis devotional is generated entirely by AI using OpenClaw. Want to create your own automated devotionals or see how it's built?\n\n⭐ GitHub Repo: https://github.com/Snail3D/daily-devotional-auto\n\nFeel free to fork, star, and adapt it for your own ministry or projects!\n\n📢 Subscribe for daily encouragement and biblical perspective on current events!`;
 }
@@ -327,7 +342,9 @@ function formatDescription(devotional) {
  */
 async function createTTS(devotional) {
   const audioPath = path.join(CONFIG.tempDir, `devotional-${Date.now()}.mp3`);
-  const text = devotional.fullText;
+  
+  // Format text with natural pauses for better speech quality
+  const ssmlText = formatTextForSpeech(devotional);
   
   // Use ElevenLabs API with your voice
   const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
@@ -335,13 +352,14 @@ async function createTTS(devotional) {
   
   if (!ELEVENLABS_API_KEY) {
     console.warn('⚠️  ELEVENLABS_API_KEY not set. Using fallback TTS.');
-    // Fallback - could use system TTS or require API key
     console.log(`Audio would be saved to: ${audioPath}`);
     return audioPath;
   }
   
   try {
-    console.log('🎙️ Generating audio with your ElevenLabs voice...');
+    console.log('🎙️ Generating natural audio with your ElevenLabs voice...');
+    console.log('  - Added natural pauses between sections');
+    console.log('  - Optimized voice settings for devotional speaking');
     
     const response = await axios({
       method: 'post',
@@ -352,11 +370,13 @@ async function createTTS(devotional) {
         'Content-Type': 'application/json'
       },
       data: {
-        text: text,
+        text: ssmlText,
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75
+          stability: 0.35,  // Lower for more natural variation
+          similarity_boost: 0.85,  // Higher for better voice matching
+          style: 0.3,  // Slight style for devotional tone
+          use_speaker_boost: true
         }
       },
       responseType: 'arraybuffer'
