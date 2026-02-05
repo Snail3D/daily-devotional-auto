@@ -17,6 +17,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { generateThumbnail } = require('./thumbnail-generator');
 
 // Configuration
 const CONFIG = {
