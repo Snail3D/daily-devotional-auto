@@ -58,10 +58,11 @@ echo ""
 echo "🎬 Step 2: Generating devotional video..."
 node scripts/daily-devotional.js
 
-# 3. Find the latest video file
+# 3. Find the latest video file (only from today)
 echo ""
 echo "📹 Step 3: Looking for video to upload..."
-VIDEO_FILE=$(ls -t ~/Desktop/devotionals/devotional-*.mp4 2>/dev/null | head -1)
+TODAY=$(date +%Y-%m-%d)
+VIDEO_FILE=$(find ~/Desktop/devotionals -name "devotional-*.mp4" -newermt "$TODAY 00:00" 2>/dev/null | head -1)
 
 if [ -f "$VIDEO_FILE" ]; then
   echo "Found: $VIDEO_FILE"
@@ -78,7 +79,8 @@ if [ -f "$VIDEO_FILE" ]; then
   rm "$VIDEO_FILE"
   echo "✅ Upload complete and local file cleaned up."
 else
-  echo "⚠️ No video file found to upload"
+  echo "⚠️ No new video file found from today ($TODAY)"
+  echo "   The devotional generation may have failed."
 fi
 
 echo ""
