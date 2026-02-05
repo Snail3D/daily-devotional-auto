@@ -328,9 +328,9 @@ ${devotional.intro} <break time="1s"/>
 
 ${devotional.body} <break time="1.5s"/>
 
-Reflection Question. <break time="0.5s"/> ${devotional.reflection} <break time="2s"/>
+${devotional.reflection} <break time="2s"/>
 
-Prayer. <break time="0.5s"/> ${devotional.prayer}`;
+${devotional.prayer}`;
 }
 
 function formatDescription(devotional) {
