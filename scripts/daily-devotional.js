@@ -448,20 +448,7 @@ bbox = draw.textbbox((0, 0), subtitle_text, font=font_subtitle)
 subtitle_width = bbox[2] - bbox[0]
 draw.text(((width - subtitle_width) / 2, 200), subtitle_text, fill='#a78bfa', font=font_subtitle)
 
-# User Suggestion Info (if applicable)
-${devotional.userSuggestionInfo ? `
-try:
-    font_suggestion = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 18)
-except:
-    font_suggestion = font_header
-
-suggestion_header = "📢 Today's Topic Requested By:"
-bbox = draw.textbbox((0, 0), suggestion_header, font=font_suggestion)
-header_w = bbox[2] - bbox[0]
-draw.text(((width - header_w) / 2, 425), suggestion_header, fill='#4ade80', font=font_suggestion)
-
-# User comment (truncated if too long)
-author = """${devotional.userSuggestionInfo.author.replace(/'/g, 
+# Date
 date_text = """${devotional.date.replace(/'/g, "\\'")}"""
 bbox = draw.textbbox((0, 0), date_text, font=font_date)
 date_width = bbox[2] - bbox[0]
@@ -472,6 +459,27 @@ scripture = """${devotional.scripture.replace(/'/g, "\\'")}"""
 bbox = draw.textbbox((0, 0), scripture, font=font_scripture)
 script_width = bbox[2] - bbox[0]
 draw.text(((width - script_width) / 2, 360), scripture, fill='#fcd34d', font=font_scripture)
+
+# User Suggestion Info (if applicable)
+${devotional.userSuggestionInfo ? `
+try:
+    font_suggestion = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 18)
+    font_comment = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 16)
+except:
+    font_suggestion = font_header
+    font_comment = font_header
+
+suggestion_header = "Today's Topic Requested By:"
+bbox = draw.textbbox((0, 0), suggestion_header, font=font_suggestion)
+header_w = bbox[2] - bbox[0]
+draw.text(((width - header_w) / 2, 480), suggestion_header, fill='#4ade80', font=font_suggestion)
+
+# User name
+author = """${devotional.userSuggestionInfo.author.replace(/'/g, "\\'")}"""
+bbox = draw.textbbox((0, 0), author, font=font_suggestion)
+author_w = bbox[2] - bbox[0]
+draw.text(((width - author_w) / 2, 510), author, fill='#ffffff', font=font_suggestion)
+` : ''}
 
 # Save
 img.save("""${outputPath}""")

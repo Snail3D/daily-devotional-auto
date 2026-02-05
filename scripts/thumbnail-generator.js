@@ -175,18 +175,18 @@ for i in range(150):
     alpha = int(180 * (1 - i/150))  # Fade out
     draw.line([(0, i), (width, i)], fill=(0, 0, 0, alpha))
 
-# Add gradient at bottom for scripture
-draw.rectangle([0, height-100, width, height], fill=(0, 0, 0, 120))
+# Add gradient at bottom for scripture - taller for bigger text
+draw.rectangle([0, height-180, width, height], fill=(0, 0, 0, 180))
 
 # Composite
 img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
 draw = ImageDraw.Draw(img)
 
-# Load fonts
+# Load fonts - BIGGER for better readability
 try:
-    font_title = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 48)
-    font_scripture = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 28)
-    font_date = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 20)
+    font_title = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 56)
+    font_scripture = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 48)  # Bigger!
+    font_date = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 36)  # Bigger!
 except:
     font_title = ImageFont.load_default()
     font_scripture = font_title
@@ -217,19 +217,15 @@ for line in lines[:2]:  # Max 2 lines
     draw.text((20, y), line, fill=(255, 255, 255), font=font_title)
     y += 55
 
-# Draw scripture at bottom
+# Draw scripture at bottom - BIGGER
 scripture = """${devotional.scripture.replace(/'/g, "\\'")}"""
-bbox = draw.textbbox((0, 0), scripture, font=font_scripture)
-sw = bbox[2] - bbox[0]
-draw.text((22, height-75), scripture, fill=(0, 0, 0), font=font_scripture)
-draw.text((20, height-77), scripture, fill=(255, 215, 0), font=font_scripture)  # Gold
+draw.text((22, height-140), scripture, fill=(0, 0, 0), font=font_scripture)
+draw.text((20, height-142), scripture, fill=(255, 215, 0), font=font_scripture)  # Gold
 
-# Draw date
+# Draw date - BIGGER
 date_str = """${devotional.date.replace(/'/g, "\\'")}"""
-bbox = draw.textbbox((0, 0), date_str, font=font_date)
-dw = bbox[2] - bbox[0]
-draw.text((22, height-40), date_str, fill=(0, 0, 0), font=font_date)
-draw.text((20, height-42), date_str, fill=(200, 200, 200), font=font_date)
+draw.text((22, height-75), date_str, fill=(0, 0, 0), font=font_date)
+draw.text((20, height-77), date_str, fill=(220, 220, 220), font=font_date)
 
 # Save
 img.save("${finalPath}")
