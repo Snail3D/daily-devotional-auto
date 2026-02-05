@@ -319,16 +319,17 @@ function formatFullText(devotional) {
 }
 
 function formatTextForSpeech(devotional) {
-  // Format text for natural ElevenLabs TTS - use punctuation for pauses, not break tags
-  return `${devotional.title}.
+  // Format text with short natural pauses for ElevenLabs TTS
+  // Using shorter break times to avoid hangs
+  return `${devotional.title}. <break time="0.8s"/>
 
-${devotional.scripture}. ${devotional.scriptureText}
+${devotional.scripture}. <break time="0.5s"/> ${devotional.scriptureText} <break time="1s"/>
 
-${devotional.intro}
+${devotional.intro} <break time="0.8s"/>
 
-${devotional.body}
+${devotional.body} <break time="1s"/>
 
-${devotional.reflection}
+${devotional.reflection} <break time="1.5s"/>
 
 ${devotional.prayer}`;
 }
